@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>FocusFlow</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0d0f1a;
+      --surface: #161928;
+      --surface2:#1e2235;
+      --border:  #2a3050;
+      --text:    #e2e8f0;
+      --muted:   #64748b;
+      --accent:  #6366f1;
+      --glow:    rgba(99,102,241,.3);
+      --green:   #22c55e;
+      --red:     #ef4444;
+      --orange:  #f59e0b;
+      --gold:    #fbbf24;
+      --radius:  12px;
+    }
+
+    body {
+      width: 400px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 14px;
+      overflow-x: hidden;
+    }
+
+    /* ── Background orbs ─────────────────────────────────────────────────── */
+    .bg-glow{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+    .orb{position:absolute;border-radius:50%;filter:blur(70px);opacity:.14;animation:drift 14s ease-in-out infinite;}
+    .orb1{width:300px;height:300px;background:#6366f1;top:-80px;left:-80px;}
+    .orb2{width:220px;height:220px;background:#e91e8c;bottom:-60px;right:-60px;animation-delay:-5s;}
+    .orb3{width:180px;height:180px;background:#0ea5e9;top:45%;left:55%;animation-delay:-9s;}
+    @keyframes drift{0%,100%{transform:translate(0,0)scale(1);}40%{transform:translate(18px,-22px)scale(1.05);}70%{transform:translate(-12px,16px)scale(.96);}}
+
+    /* ── Layout ──────────────────────────────────────────────────────────── */
+    .container{
+      position:relative;z-index:1;
+      padding:18px 18px 22px;
+      max-height:600px;
+      overflow-y:auto;
+      scrollbar-width:thin;
+      scrollbar-color:var(--border) transparent;
+    }
+    .container::-webkit-scrollbar{width:5px;}
+    .container::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+
+    /* ── Header ──────────────────────────────────────────────────────────── */
+    header{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+    .logo-icon{width:40px;height:40px;flex-shrink:0;background:linear-gradient(135deg,#6366f1,#a855f7);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 0 20px rgba(99,102,241,.5);}
+    .logo-title{font-size:1.2rem;font-weight:800;letter-spacing:-.3px;background:linear-gradient(135deg,#a5b4fc,#e879f9,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+    .logo-sub{font-size:.72rem;color:var(--muted);}
+    .header-right{margin-left:auto;display:flex;gap:6px;}
+    .btn-dashboard{
+      background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.3);
+      color:#a5b4fc;border-radius:8px;padding:5px 10px;
+      font-size:.72rem;font-weight:700;cursor:pointer;
+      transition:background .2s,border-color .2s;white-space:nowrap;
+    }
+    .btn-dashboard:hover{background:rgba(99,102,241,.22);border-color:var(--accent);}
+
+    /* ── Break notification strip ────────────────────────────────────────── */
+    .break-strip{
+      display:none;
+      align-items:center;gap:8px;
+      background:rgba(34,197,94,.1);
+      border:1px solid rgba(34,197,94,.25);
+      border-radius:10px;padding:10px 14px;
+      margin-bottom:14px;font-size:.8rem;color:#86efac;
+    }
+    .break-strip.show{display:flex;}
+    .break-time{font-weight:800;font-size:.9rem;font-variant-numeric:tabular-nums;margin-left:auto;}
+
+    /* ── Stats strip ──────────────────────────────────────────────────────── */
+    .stats{display:flex;gap:8px;margin-bottom:16px;}
+    .stat{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 8px;text-align:center;}
+    .stat-val{font-size:1.3rem;font-weight:700;line-height:1;}
+    .stat-lbl{font-size:.63rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:3px;}
+    .stat.points-stat .stat-val{color:var(--gold);}
+
+    /* ── Focus progress table ────────────────────────────────────────────── */
+    .focus-panel{
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      margin-bottom:14px;
+      overflow:hidden;
+    }
+    .focus-panel-hdr{
+      padding:10px 14px;
+      display:flex;align-items:center;gap:8px;
+      background:rgba(99,102,241,.08);
+      border-bottom:1px solid var(--border);
+      font-size:.75rem;font-weight:700;
+      text-transform:uppercase;letter-spacing:.08em;color:#a5b4fc;
+    }
+    .focus-table{width:100%;border-collapse:collapse;}
+    .focus-table th{
+      font-size:.67rem;font-weight:700;text-transform:uppercase;
+      letter-spacing:.07em;color:var(--muted);
+      padding:7px 14px;text-align:left;
+      border-bottom:1px solid var(--border);
+    }
+    .focus-table td{padding:8px 14px;font-size:.8rem;border-bottom:1px solid rgba(42,48,80,.5);}
+    .focus-table tr:last-child td{border-bottom:none;}
+    .focus-table tr:hover td{background:rgba(255,255,255,.02);}
+    .td-cat{display:flex;align-items:center;gap:8px;font-weight:600;}
+    .td-badge{
+      display:inline-flex;align-items:center;gap:4px;
+      border-radius:999px;padding:2px 9px;font-size:.7rem;font-weight:700;
+    }
+    .badge-locked{background:rgba(245,158,11,.15);color:#fbbf24;border:1px solid rgba(245,158,11,.3);}
+    .badge-free  {background:rgba(34,197,94,.12);color:#4ade80;border:1px solid rgba(34,197,94,.25);}
+    .badge-sched {background:rgba(14,165,233,.12);color:#7dd3fc;border:1px solid rgba(14,165,233,.25);}
+    .td-countdown{font-variant-numeric:tabular-nums;font-weight:700;color:var(--orange);font-size:.82rem;}
+    .td-countdown.free{color:var(--muted);font-weight:400;}
+
+    /* ── Section label ───────────────────────────────────────────────────── */
+    .section-label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:16px 0 10px;}
+
+    /* ── Category cards ──────────────────────────────────────────────────── */
+    .cat-list{display:flex;flex-direction:column;gap:8px;}
+
+    .cat-card{
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:var(--radius);overflow:hidden;
+      transition:border-color .25s,background .25s;
+    }
+    .cat-card.active  {border-color:var(--cat-color,var(--accent));background:var(--surface2);}
+    .cat-card.locked  {border-color:var(--orange)!important;}
+
+    .cat-header{
+      padding:12px 14px;display:flex;align-items:center;gap:12px;
+      cursor:pointer;user-select:none;transition:transform .15s;
+    }
+    .cat-header:hover{transform:translateX(2px);}
+
+    .cat-emoji-wrap{
+      width:36px;height:36px;flex-shrink:0;border-radius:9px;
+      display:flex;align-items:center;justify-content:center;font-size:18px;
+      background:color-mix(in srgb,var(--cat-color,var(--accent)) 18%,transparent);
+      transition:box-shadow .25s;
+    }
+    .cat-card.active .cat-emoji-wrap{box-shadow:0 0 14px color-mix(in srgb,var(--cat-color,var(--accent)) 60%,transparent);}
+
+    .cat-info{flex:1;min-width:0;}
+    .cat-name-row{display:flex;align-items:center;gap:6px;}
+    .cat-name{font-weight:600;font-size:.88rem;}
+    .lock-badge{
+      font-size:.65rem;font-weight:700;
+      background:rgba(245,158,11,.15);color:#fbbf24;
+      border:1px solid rgba(245,158,11,.3);
+      border-radius:999px;padding:1px 7px;
+      white-space:nowrap;
+    }
+    .sched-badge{
+      font-size:.65rem;font-weight:700;
+      background:rgba(14,165,233,.12);color:#7dd3fc;
+      border:1px solid rgba(14,165,233,.25);
+      border-radius:999px;padding:1px 7px;
+      white-space:nowrap;
+    }
+    .cat-meta{display:flex;align-items:center;gap:8px;margin-top:3px;}
+    .cat-count{font-size:.72rem;color:var(--muted);}
+    .cat-countdown{font-size:.72rem;color:var(--orange);font-weight:700;font-variant-numeric:tabular-nums;}
+
+    .expand-btn{
+      background:none;border:1px solid var(--border);color:var(--muted);
+      cursor:pointer;font-size:.7rem;padding:2px 6px;border-radius:5px;
+      transition:color .2s,border-color .2s,background .2s;white-space:nowrap;line-height:1.4;
+    }
+    .expand-btn:hover{color:var(--text);border-color:var(--muted);background:var(--surface2);}
+    .expand-btn.open{color:var(--accent);border-color:var(--accent);}
+
+    /* Toggle switch */
+    .toggle{position:relative;width:38px;height:21px;flex-shrink:0;}
+    .toggle input{opacity:0;width:0;height:0;}
+    .slider{position:absolute;inset:0;background:var(--border);border-radius:21px;transition:background .25s;}
+    .slider::before{content:"";position:absolute;width:15px;height:15px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform .25s;}
+    .toggle input:checked + .slider{background:var(--cat-color,var(--accent));}
+    .toggle input:checked + .slider::before{transform:translateX(17px);}
+    .toggle.disabled{opacity:.45;cursor:not-allowed;pointer-events:none;}
+
+    /* Domain list */
+    .domain-list{max-height:0;overflow:hidden;transition:max-height .35s ease;border-top:0px solid var(--border);}
+    .domain-list.open{max-height:260px;border-top-width:1px;overflow-y:auto;}
+    .domain-list::-webkit-scrollbar{width:4px;}
+    .domain-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+    .domain-inner{padding:10px 14px;display:flex;flex-wrap:wrap;gap:6px;}
+    .domain-tag{display:inline-flex;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:3px 9px;font-size:.72rem;color:var(--muted);font-family:'Courier New',monospace;transition:border-color .2s,color .2s;}
+    .cat-card.active .domain-tag{border-color:color-mix(in srgb,var(--cat-color,var(--accent)) 35%,transparent);color:var(--text);}
+    .domain-tag .dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;background:var(--muted);}
+    .cat-card.active .domain-tag .dot{background:var(--cat-color,var(--accent));}
+
+    /* ── Schedule toggle inside card ─────────────────────────────────────── */
+    .sched-btn{
+      background:none;border:1px solid var(--border);color:var(--muted);
+      cursor:pointer;font-size:.65rem;padding:2px 7px;border-radius:5px;
+      transition:color .2s,border-color .2s;white-space:nowrap;
+    }
+    .sched-btn.active-sched{color:#7dd3fc;border-color:rgba(14,165,233,.4);}
+    .sched-btn:hover{color:var(--text);border-color:var(--muted);}
+
+    /* ── Quick actions ───────────────────────────────────────────────────── */
+    .actions{display:flex;gap:8px;margin-top:16px;}
+    .btn{flex:1;padding:9px 12px;border-radius:9px;border:none;cursor:pointer;font-size:.8rem;font-weight:600;transition:transform .12s,box-shadow .12s,opacity .12s;}
+    .btn:hover{transform:translateY(-1px);box-shadow:0 5px 18px rgba(0,0,0,.4);}
+    .btn:active{transform:translateY(0);opacity:.8;}
+    .btn-all{background:linear-gradient(135deg,#6366f1,#a855f7);color:#fff;}
+    .btn-clear{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;}
+
+    /* ── Custom domain panel ─────────────────────────────────────────────── */
+    .custom-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-top:16px;}
+    .custom-title{font-weight:700;font-size:.85rem;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+    .input-row{display:flex;gap:8px;}
+    .domain-input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 11px;color:var(--text);font-size:.82rem;outline:none;transition:border-color .2s,box-shadow .2s;}
+    .domain-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--glow);}
+    .domain-input::placeholder{color:var(--muted);}
+    .btn-add{background:linear-gradient(135deg,#6366f1,#a855f7);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:.8rem;font-weight:700;cursor:pointer;transition:transform .12s,opacity .12s;white-space:nowrap;}
+    .btn-add:hover{transform:translateY(-1px);}
+    .btn-add:active{opacity:.8;}
+    .chip-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+    .chip{display:inline-flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:999px;padding:3px 10px 3px 12px;font-size:.75rem;}
+    .chip-x{background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;line-height:1;padding:0;transition:color .15s;}
+    .chip-x:hover{color:var(--red);}
+    .no-custom{font-size:.76rem;color:var(--muted);font-style:italic;}
+
+    /* ── Tasks & Points panel ────────────────────────────────────────────── */
+    .tasks-panel{
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:var(--radius);padding:14px;margin-top:16px;
+    }
+    .tasks-hdr{
+      display:flex;align-items:center;gap:8px;margin-bottom:12px;
+    }
+    .tasks-hdr-title{font-weight:700;font-size:.9rem;}
+    .points-pill{
+      margin-left:auto;
+      background:rgba(251,191,36,.12);
+      border:1px solid rgba(251,191,36,.3);
+      border-radius:999px;padding:3px 10px;
+      font-size:.78rem;font-weight:800;color:var(--gold);
+      display:flex;align-items:center;gap:4px;
+    }
+
+    .task-input-row{display:flex;gap:8px;margin-bottom:10px;}
+    .task-input{
+      flex:1;background:var(--bg);border:1px solid var(--border);
+      border-radius:8px;padding:7px 11px;color:var(--text);
+      font-size:.82rem;outline:none;
+      transition:border-color .2s,box-shadow .2s;
+    }
+    .task-input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(251,191,36,.15);}
+    .task-input::placeholder{color:var(--muted);}
+    .btn-task-add{
+      background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;
+      border:none;border-radius:8px;padding:7px 13px;
+      font-size:.8rem;font-weight:700;cursor:pointer;
+      transition:transform .12s,opacity .12s;white-space:nowrap;
+    }
+    .btn-task-add:hover{transform:translateY(-1px);}
+    .btn-task-add:active{opacity:.8;}
+
+    .task-list{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
+    .task-item{
+      display:flex;align-items:center;gap:10px;
+      background:var(--surface2);border:1px solid var(--border);
+      border-radius:8px;padding:8px 12px;
+      transition:opacity .25s;
+    }
+    .task-item.done{opacity:.55;}
+    .task-check{
+      width:18px;height:18px;flex-shrink:0;
+      background:none;border:2px solid var(--border);
+      border-radius:5px;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;
+      font-size:.8rem;transition:background .2s,border-color .2s;
+    }
+    .task-check:hover{border-color:var(--gold);}
+    .task-item.done .task-check{background:var(--gold);border-color:var(--gold);color:#000;}
+    .task-text{flex:1;font-size:.82rem;line-height:1.3;}
+    .task-item.done .task-text{text-decoration:line-through;color:var(--muted);}
+    .task-del{
+      background:none;border:none;color:var(--muted);cursor:pointer;
+      font-size:.85rem;padding:0;line-height:1;
+      transition:color .15s;
+    }
+    .task-del:hover{color:var(--red);}
+    .no-tasks{font-size:.76rem;color:var(--muted);font-style:italic;padding:4px 0;}
+
+    /* Points shop */
+    .shop-hdr{
+      display:flex;align-items:center;gap:6px;
+      font-size:.76rem;font-weight:700;
+      text-transform:uppercase;letter-spacing:.08em;
+      color:var(--muted);margin-bottom:8px;
+      border-top:1px solid var(--border);padding-top:12px;
+    }
+    .shop-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;}
+    .shop-item{
+      background:var(--bg);border:1px solid var(--border);
+      border-radius:9px;padding:10px 12px;cursor:pointer;
+      transition:border-color .2s,background .2s,transform .12s;
+      text-align:center;
+    }
+    .shop-item:hover:not(.locked-shop){border-color:var(--gold);background:rgba(251,191,36,.06);transform:translateY(-1px);}
+    .shop-item.locked-shop{opacity:.4;cursor:not-allowed;}
+    .shop-item-mins{font-size:1.1rem;font-weight:800;color:var(--gold);}
+    .shop-item-cost{font-size:.7rem;color:var(--muted);margin-top:2px;}
+    .shop-item-icon{font-size:1.4rem;margin-bottom:4px;}
+
+    /* ── Toast ───────────────────────────────────────────────────────────── */
+    #toast{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:8px;padding:9px 16px;font-size:.8rem;box-shadow:0 6px 24px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .25s;white-space:nowrap;z-index:200;}
+    #toast.show{opacity:1;}
+    #toast.err{border-left-color:var(--red);}
+    #toast.warn{border-left-color:var(--orange);}
+    #toast.gold{border-left-color:var(--gold);}
+
+    /* ── Timer modal ─────────────────────────────────────────────────────── */
+    .modal-overlay{
+      position:fixed;inset:0;
+      background:rgba(5,7,18,.88);
+      backdrop-filter:blur(6px);
+      z-index:150;
+      display:flex;align-items:center;justify-content:center;
+      padding:16px;
+      opacity:0;pointer-events:none;
+      transition:opacity .2s;
+    }
+    .modal-overlay.open{opacity:1;pointer-events:all;}
+
+    .modal{
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:18px;
+      padding:22px;
+      width:100%;
+      max-width:340px;
+      box-shadow:0 24px 60px rgba(0,0,0,.6);
+      transform:translateY(14px);
+      transition:transform .25s;
+    }
+    .modal-overlay.open .modal{transform:translateY(0);}
+
+    .modal-hdr{display:flex;align-items:center;gap:12px;margin-bottom:8px;}
+    .modal-emoji{
+      width:44px;height:44px;border-radius:12px;flex-shrink:0;
+      display:flex;align-items:center;justify-content:center;font-size:22px;
+      background:color-mix(in srgb,var(--modal-color,var(--accent)) 20%,transparent);
+    }
+    .modal-title{font-weight:800;font-size:1rem;}
+    .modal-sub{font-size:.75rem;color:var(--muted);margin-top:2px;}
+
+    .modal-warn{
+      display:flex;align-items:center;gap:8px;
+      background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);
+      border-radius:9px;padding:9px 12px;
+      font-size:.76rem;color:#fde68a;
+      margin:14px 0;
+    }
+
+    .time-grid{
+      display:grid;grid-template-columns:repeat(3,1fr);
+      gap:8px;margin-bottom:14px;
+    }
+    .time-btn{
+      background:var(--surface2);border:1px solid var(--border);
+      color:var(--text);border-radius:10px;
+      padding:10px 6px;font-size:.78rem;font-weight:600;
+      cursor:pointer;text-align:center;
+      transition:border-color .2s,background .2s,color .2s;
+    }
+    .time-btn:hover{border-color:var(--accent);background:rgba(99,102,241,.12);}
+    .time-btn.selected{border-color:var(--orange);background:rgba(245,158,11,.15);color:#fde68a;}
+    .time-btn.nolimit.selected{border-color:var(--green);background:rgba(34,197,94,.12);color:#4ade80;}
+
+    .custom-duration-row{
+      display:none;gap:8px;align-items:center;margin-bottom:14px;
+    }
+    .custom-duration-row.show{display:flex;}
+    .dur-input{
+      flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;
+      padding:7px 11px;color:var(--text);font-size:.85rem;outline:none;
+      transition:border-color .2s;
+    }
+    .dur-input:focus{border-color:var(--accent);}
+    .dur-unit{font-size:.8rem;color:var(--muted);}
+
+    .modal-btns{display:flex;gap:10px;}
+    .modal-btn{
+      flex:1;padding:10px;border-radius:10px;border:none;
+      font-size:.85rem;font-weight:700;cursor:pointer;
+      transition:transform .12s,opacity .12s;
+    }
+    .modal-btn:active{opacity:.8;transform:scale(.97);}
+    .modal-btn-cancel{background:var(--surface2);border:1px solid var(--border);color:var(--muted);}
+    .modal-btn-cancel:hover{color:var(--text);}
+    .modal-btn-lock{background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;}
+    .modal-btn-lock.free{background:linear-gradient(135deg,#6366f1,#a855f7);}
+
+    /* ── Schedule modal ──────────────────────────────────────────────────── */
+    .sched-modal{max-width:360px;}
+    .sched-modal .modal-sub{margin-bottom:14px;}
+    .day-row{display:flex;gap:6px;margin-bottom:14px;}
+    .day-btn{
+      flex:1;padding:7px 4px;background:var(--surface2);border:1px solid var(--border);
+      color:var(--muted);border-radius:8px;font-size:.72rem;font-weight:700;
+      cursor:pointer;text-align:center;transition:border-color .2s,background .2s,color .2s;
+    }
+    .day-btn.sel{border-color:rgba(14,165,233,.5);background:rgba(14,165,233,.12);color:#7dd3fc;}
+    .time-range-row{display:flex;align-items:center;gap:8px;margin-bottom:16px;}
+    .time-input{
+      flex:1;background:var(--bg);border:1px solid var(--border);
+      border-radius:8px;padding:7px 10px;color:var(--text);
+      font-size:.85rem;outline:none;transition:border-color .2s;
+    }
+    .time-input:focus{border-color:rgba(14,165,233,.5);}
+    .time-range-sep{color:var(--muted);font-size:.8rem;}
+    .modal-btn-sched{background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff;}
+
+    /* ── Footer ──────────────────────────────────────────────────────────── */
+    footer{text-align:center;color:var(--muted);font-size:.68rem;margin-top:16px;padding-top:12px;border-top:1px solid var(--border);}
+  </style>
+</head>
+<body>
+
+<div class="bg-glow">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+</div>
+
+<div class="container">
+
+  <header>
+    <div class="logo-icon">🛡️</div>
+    <div>
+      <div class="logo-title">FocusFlow</div>
+      <div class="logo-sub">Block distractions · Stay focused</div>
+    </div>
+    <div class="header-right">
+      <button class="btn-dashboard" id="btnDashboard">📊 Dashboard</button>
+    </div>
+  </header>
+
+  <!-- Break notification strip -->
+  <div class="break-strip" id="breakStrip">
+    ⏸️ Screen break active — relax!
+    <span class="break-time" id="breakCountdown">10:00</span>
+  </div>
+
+  <!-- Stats strip -->
+  <div class="stats">
+    <div class="stat"><div class="stat-val" id="statRules">0</div><div class="stat-lbl">Rules Active</div></div>
+    <div class="stat"><div class="stat-val" id="statCats">0</div><div class="stat-lbl">Blocked</div></div>
+    <div class="stat"><div class="stat-val" id="statLocked">0</div><div class="stat-lbl">Locked</div></div>
+    <div class="stat points-stat"><div class="stat-val" id="statPoints">0</div><div class="stat-lbl">⭐ Points</div></div>
+  </div>
+
+  <!-- Focus progress table (shown when categories are active) -->
+  <div class="focus-panel" id="focusPanel" style="display:none">
+    <div class="focus-panel-hdr">🎯 Focus Session Progress</div>
+    <table class="focus-table">
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th>Type</th>
+          <th>Time Left</th>
+        </tr>
+      </thead>
+      <tbody id="focusTableBody"></tbody>
+    </table>
+  </div>
+
+  <!-- Categories -->
+  <div class="section-label">Block Categories</div>
+  <div class="cat-list" id="catList"></div>
+
+  <!-- Quick actions -->
+  <div class="actions">
+    <button class="btn btn-all"   id="btnAll">⚡ Block All</button>
+    <button class="btn btn-clear" id="btnClear">🗑 Remove All</button>
+  </div>
+
+  <!-- Custom domain panel -->
+  <div class="custom-panel">
+    <div class="custom-title">🌐 Block a Custom Site</div>
+    <div class="input-row">
+      <input class="domain-input" id="domainInput" placeholder="e.g. example.com" type="text" />
+      <button class="btn-add" id="btnAdd">+ Block</button>
+    </div>
+    <div class="chip-list" id="chipList">
+      <span class="no-custom">No custom sites blocked.</span>
+    </div>
+  </div>
+
+  <!-- Tasks & Points panel -->
+  <div class="tasks-panel">
+    <div class="tasks-hdr">
+      <span>⭐</span>
+      <span class="tasks-hdr-title">Tasks &amp; Points</span>
+      <div class="points-pill"><span id="pointsDisplay">0</span> pts</div>
+    </div>
+
+    <div class="task-input-row">
+      <input class="task-input" id="taskInput" placeholder="Add a task to earn points..." type="text" />
+      <button class="btn-task-add" id="btnTaskAdd">+ Add</button>
+    </div>
+
+    <div class="task-list" id="taskList">
+      <span class="no-tasks">No tasks yet — add one to earn ⭐ points!</span>
+    </div>
+
+    <div class="shop-hdr">🛍️ Spend Points — Screen Break</div>
+    <div class="shop-grid" id="shopGrid"></div>
+  </div>
+
+  <footer>v3.0 · Tasks &amp; Points · Focus Mode · Analytics</footer>
+</div>
+
+<!-- Timer picker modal -->
+<div class="modal-overlay" id="timerModal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-emoji" id="modalEmoji"></div>
+      <div>
+        <div class="modal-title">Block <span id="modalCatName"></span></div>
+        <div class="modal-sub">Pick a duration for this block</div>
+      </div>
+    </div>
+
+    <div class="modal-warn">
+      ⏰ Timed locks <strong>cannot be removed early.</strong> Choose wisely.
+    </div>
+
+    <div class="time-grid" id="timeGrid"></div>
+
+    <div class="custom-duration-row" id="customDurRow">
+      <input class="dur-input" id="customDurInput" type="number" min="1" max="1440" placeholder="30" />
+      <span class="dur-unit">minutes</span>
+    </div>
+
+    <div class="modal-btns">
+      <button class="modal-btn modal-btn-cancel" id="btnModalCancel">Cancel</button>
+      <button class="modal-btn modal-btn-lock"   id="btnModalLock">🔒 Lock It</button>
+    </div>
+  </div>
+</div>
+
+<!-- Schedule modal -->
+<div class="modal-overlay" id="schedModal">
+  <div class="modal sched-modal">
+    <div class="modal-hdr">
+      <div class="modal-emoji" id="schedModalEmoji"></div>
+      <div>
+        <div class="modal-title">📅 Focus Schedule</div>
+        <div class="modal-sub">Auto-block <span id="schedCatName"></span> during these hours</div>
+      </div>
+    </div>
+
+    <div style="font-size:.72rem;color:var(--muted);margin-bottom:8px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;">Days of Week</div>
+    <div class="day-row" id="dayRow"></div>
+
+    <div style="font-size:.72rem;color:var(--muted);margin-bottom:8px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;">Time Range</div>
+    <div class="time-range-row">
+      <input class="time-input" id="schedStart" type="time" value="09:00" />
+      <span class="time-range-sep">to</span>
+      <input class="time-input" id="schedEnd" type="time" value="17:00" />
+    </div>
+
+    <div class="modal-btns">
+      <button class="modal-btn modal-btn-cancel" id="btnSchedCancel">Cancel</button>
+      <button class="modal-btn modal-btn-sched"  id="btnSchedSave">📅 Save Schedule</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Site Blocked</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0a0c18;
+      --surface: #13162a;
+      --border:  #1e2440;
+      --text:    #e2e8f0;
+      --muted:   #64748b;
+      --accent:  #6366f1;
+      --red:     #ef4444;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      overflow: hidden;
+    }
+
+    /* ── Particle canvas ──────────────────────────────────────────────────── */
+    canvas {
+      position: fixed; inset: 0; z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ── Glowing orbs ─────────────────────────────────────────────────────── */
+    .orbs { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+    .orb  {
+      position: absolute; border-radius: 50%;
+      filter: blur(90px); opacity: .12;
+      animation: drift 16s ease-in-out infinite;
+    }
+    .orb1 { width:600px;height:600px;background:#6366f1;top:-200px;left:-200px; }
+    .orb2 { width:500px;height:500px;background:#ef4444;bottom:-150px;right:-150px;animation-delay:-6s; }
+    .orb3 { width:350px;height:350px;background:#a855f7;top:50%;left:50%;animation-delay:-11s; }
+    @keyframes drift {
+      0%,100% { transform:translate(0,0)scale(1); }
+      40%     { transform:translate(30px,-40px)scale(1.06); }
+      70%     { transform:translate(-20px,25px)scale(.94); }
+    }
+
+    /* ── Main content ─────────────────────────────────────────────────────── */
+    .page {
+      position: relative; z-index: 1;
+      height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 24px;
+      text-align: center;
+      animation: fadeUp .6s ease both;
+    }
+    @keyframes fadeUp {
+      from { opacity:0; transform:translateY(30px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+
+    /* ── Shield ───────────────────────────────────────────────────────────── */
+    .shield-wrap {
+      margin-bottom: 28px;
+      animation: pulse 3s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%,100% { transform:scale(1);   filter:drop-shadow(0 0 20px rgba(99,102,241,.5)); }
+      50%     { transform:scale(1.06);filter:drop-shadow(0 0 40px rgba(99,102,241,.8)); }
+    }
+    .shield-svg {
+      width: 90px; height: 90px;
+    }
+
+    /* ── Domain pill ──────────────────────────────────────────────────────── */
+    .domain-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(239,68,68,.12);
+      border: 1px solid rgba(239,68,68,.3);
+      border-radius: 999px;
+      padding: 6px 18px;
+      font-size: .85rem;
+      color: #fca5a5;
+      margin-bottom: 20px;
+      animation: fadeUp .6s .1s ease both;
+    }
+    .domain-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--red);
+      box-shadow: 0 0 8px var(--red);
+      animation: blink 1.4s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1}50%{opacity:.3} }
+
+    /* ── Heading ──────────────────────────────────────────────────────────── */
+    h1 {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 900;
+      letter-spacing: -.03em;
+      line-height: 1.1;
+      margin-bottom: 10px;
+      animation: fadeUp .6s .15s ease both;
+    }
+    h1 .gradient {
+      background: linear-gradient(135deg, #f472b6, #a855f7, #6366f1);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      font-size: 1rem; color: var(--muted);
+      margin-bottom: 40px;
+      animation: fadeUp .6s .2s ease both;
+    }
+
+    /* ── Divider ──────────────────────────────────────────────────────────── */
+    .divider {
+      width: 60px; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      margin: 0 auto 36px;
+      animation: fadeUp .6s .25s ease both;
+    }
+
+    /* ── Quote card ───────────────────────────────────────────────────────── */
+    .quote-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 28px 36px;
+      max-width: 580px;
+      width: 100%;
+      position: relative;
+      box-shadow: 0 20px 60px rgba(0,0,0,.4);
+      animation: fadeUp .6s .3s ease both;
+    }
+    .quote-mark {
+      font-size: 5rem;
+      line-height: .7;
+      color: var(--accent);
+      opacity: .25;
+      font-family: Georgia, serif;
+      position: absolute;
+      top: 14px; left: 22px;
+      pointer-events: none;
+    }
+    .quote-text {
+      font-size: 1.15rem;
+      font-weight: 500;
+      line-height: 1.65;
+      color: var(--text);
+      margin-bottom: 14px;
+      padding-top: 8px;
+    }
+    .quote-author {
+      font-size: .8rem;
+      color: var(--accent);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .quote-author::before { content: "— "; }
+
+    /* ── Buttons ──────────────────────────────────────────────────────────── */
+    .btn-row {
+      display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
+      margin-top: 32px;
+      animation: fadeUp .6s .4s ease both;
+    }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 26px;
+      border-radius: 12px;
+      font-size: .9rem; font-weight: 700;
+      border: none; cursor: pointer;
+      transition: transform .15s, box-shadow .15s, opacity .15s;
+    }
+    .btn:hover  { transform:translateY(-2px); box-shadow:0 8px 28px rgba(0,0,0,.4); }
+    .btn:active { opacity:.8; transform:translateY(0); }
+    .btn-back {
+      background: linear-gradient(135deg,#6366f1,#a855f7);
+      color: #fff;
+    }
+    .btn-new {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .btn-new:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Category badge ───────────────────────────────────────────────────── */
+    .cat-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(99,102,241,.12);
+      border: 1px solid rgba(99,102,241,.25);
+      border-radius: 999px;
+      padding: 4px 14px;
+      font-size: .76rem;
+      color: #a5b4fc;
+      margin-bottom: 16px;
+      animation: fadeUp .6s .08s ease both;
+    }
+
+    /* ── Time saved strip ────────────────────────────────────────────────── */
+    .saved-strip {
+      display: none; align-items: center; gap: 10px;
+      margin-top: 18px;
+      background: rgba(34,197,94,.08);
+      border: 1px solid rgba(34,197,94,.2);
+      border-radius: 12px;
+      padding: 10px 20px;
+      font-size: .82rem;
+      color: #86efac;
+      animation: fadeUp .6s .38s ease both;
+    }
+    .saved-strip.show { display: flex; }
+    .saved-icon { font-size: 1.4rem; }
+    .saved-label { font-weight: 600; }
+
+    /* ── Focus timer ──────────────────────────────────────────────────────── */
+    .focus-strip {
+      display: flex; align-items: center; gap: 10px;
+      margin-top: 22px;
+      color: var(--muted);
+      font-size: .78rem;
+      animation: fadeUp .6s .45s ease both;
+    }
+    .focus-time {
+      font-size: 1.1rem; font-weight: 700;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      min-width: 52px;
+    }
+    .focus-bar-wrap {
+      flex: 1; max-width: 180px;
+      height: 4px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .focus-bar {
+      height: 100%;
+      background: linear-gradient(90deg,#6366f1,#a855f7);
+      border-radius: 4px;
+      transition: width 1s linear;
+      width: 0%;
+    }
+
+    /* ── Meme card ────────────────────────────────────────────────────────── */
+    .meme-wrap {
+      margin-top: 28px;
+      animation: fadeUp .6s .5s ease both;
+    }
+    .meme-label {
+      font-size: .68rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .1em;
+      color: var(--muted);
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    .meme-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      max-width: 460px;
+      width: 100%;
+      box-shadow: 0 12px 40px rgba(0,0,0,.45);
+      transition: transform .2s;
+    }
+    .meme-card:hover { transform: scale(1.02); }
+
+    /* ── Drake meme ── */
+    .drake { display: flex; flex-direction: column; }
+    .drake-row {
+      display: flex; align-items: center;
+      padding: 14px 18px; gap: 16px;
+      font-weight: 700; font-size: .95rem; line-height: 1.3;
+    }
+    .drake-row:first-child { border-bottom: 1px solid var(--border); }
+    .drake-face { font-size: 2.4rem; flex-shrink: 0; width: 52px; text-align: center; }
+    .drake-row.no  { background: rgba(239,68,68,.08);  color: #fca5a5; }
+    .drake-row.yes { background: rgba(34,197,94,.08);  color: #86efac; }
+
+    /* ── This is fine ── */
+    .fine-scene {
+      padding: 20px;
+      text-align: center;
+      background: linear-gradient(180deg, #1a0a00 0%, #2d1000 100%);
+    }
+    .fine-flames { font-size: 2rem; letter-spacing: 4px; animation: flicker .6s ease-in-out infinite alternate; }
+    @keyframes flicker { from{opacity:.7;transform:scaleY(.95)} to{opacity:1;transform:scaleY(1.05)} }
+    .fine-dog { font-size: 3rem; margin: 8px 0; }
+    .fine-speech {
+      display: inline-block;
+      background: #fff; color: #111;
+      border-radius: 12px 12px 12px 4px;
+      padding: 8px 16px;
+      font-weight: 900; font-size: 1rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,.4);
+      position: relative;
+    }
+    .fine-caption {
+      font-size: .75rem; color: #f97316; margin-top: 10px;
+      font-style: italic;
+    }
+
+    /* ── Expanding brain ── */
+    .brain-wrap { padding: 4px 0; }
+    .brain-row {
+      display: flex; align-items: center; gap: 14px;
+      padding: 10px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    .brain-row:last-child { border-bottom: none; }
+    .brain-emoji { font-size: 1.8rem; flex-shrink: 0; width: 40px; text-align: center; }
+    .brain-text  { font-size: .88rem; font-weight: 600; }
+    .brain-row:nth-child(1) { background: rgba(99,102,241,.06);  color: #a5b4fc; }
+    .brain-row:nth-child(2) { background: rgba(168,85,247,.09);  color: #d8b4fe; }
+    .brain-row:nth-child(3) { background: rgba(236,72,153,.12);  color: #f9a8d4; }
+    .brain-row:nth-child(4) { background: rgba(251,191,36,.15);  color: #fde68a; }
+
+    /* ── Surprised Pikachu ── */
+    .pikachu-wrap { padding: 20px 22px; }
+    .pikachu-setup { margin-bottom: 14px; }
+    .pikachu-line {
+      display: flex; align-items: flex-start; gap: 10px;
+      margin-bottom: 8px;
+      font-size: .9rem;
+    }
+    .pikachu-speaker { font-weight: 800; color: var(--accent); min-width: 60px; }
+    .pikachu-pika {
+      text-align: center;
+      font-size: 3.5rem;
+      margin-top: 4px;
+      animation: wiggle 1.5s ease-in-out infinite;
+    }
+    @keyframes wiggle {
+      0%,100%{transform:rotate(0)} 25%{transform:rotate(-6deg)} 75%{transform:rotate(6deg)}
+    }
+
+    /* ── SpongeBob mocking ── */
+    .sponge-wrap { padding: 20px 22px; text-align: center; }
+    .sponge-img  { font-size: 3.5rem; margin-bottom: 12px;
+                   animation: tilt .5s ease-in-out infinite alternate; }
+    @keyframes tilt { from{transform:rotate(-5deg)} to{transform:rotate(5deg)} }
+    .sponge-normal  { font-size: .9rem; color: var(--muted); margin-bottom: 6px; }
+    .sponge-mock    { font-size: 1rem; font-weight: 800; color: #fde68a; letter-spacing: .05em; }
+
+    /* ── Change my mind ── */
+    .change-wrap { padding: 20px 22px; text-align: center; }
+    .change-table-img { font-size: 2.5rem; margin-bottom: 10px; }
+    .change-person    { font-size: 1.5rem; }
+    .change-sign {
+      display: inline-block;
+      background: #fff; color: #111;
+      border: 3px solid #111;
+      border-radius: 8px;
+      padding: 10px 18px;
+      font-weight: 900; font-size: .95rem;
+      margin: 10px 0;
+      box-shadow: 4px 4px 0 #111;
+    }
+    .change-caption { font-size: .78rem; color: var(--muted); margin-top: 8px; }
+
+    /* ── Meme shuffle btn ── */
+    .meme-shuffle {
+      background: none; border: 1px solid var(--border);
+      color: var(--muted); border-radius: 8px;
+      padding: 6px 14px; font-size: .76rem; cursor: pointer;
+      margin-top: 10px; display: block; margin-left: auto; margin-right: auto;
+      transition: color .2s, border-color .2s;
+    }
+    .meme-shuffle:hover { color: var(--text); border-color: var(--accent); }
+  </style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+<div class="orbs">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+</div>
+
+<div class="page">
+
+  <!-- Shield -->
+  <div class="shield-wrap">
+    <svg class="shield-svg" viewBox="0 0 90 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="sg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#6366f1"/>
+          <stop offset="100%" stop-color="#a855f7"/>
+        </linearGradient>
+      </defs>
+      <path d="M45 8 L76 20 L76 46 C76 63 62 76 45 82 C28 76 14 63 14 46 L14 20 Z"
+            fill="url(#sg)" opacity=".2" stroke="url(#sg)" stroke-width="2.5"/>
+      <path d="M45 16 L68 26 L68 46 C68 59 58 70 45 75 C32 70 22 59 22 46 L22 26 Z"
+            fill="url(#sg)" opacity=".35"/>
+      <path d="M36 44 L42 50 L56 36" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+
+  <!-- Category badge -->
+  <div class="cat-badge" id="catBadge">🛡️ Protected by FocusFlow</div>
+
+  <!-- Domain pill -->
+  <div class="domain-pill">
+    <div class="domain-dot"></div>
+    <span id="domainLabel">This site is blocked</span>
+  </div>
+
+  <!-- Heading -->
+  <h1><span class="gradient">Stay Focused.</span><br>You've Got This.</h1>
+  <p class="subtitle">This page is blocked to help you stay on track.</p>
+
+  <div class="divider"></div>
+
+  <!-- Quote -->
+  <div class="quote-card">
+    <div class="quote-mark">"</div>
+    <p class="quote-text" id="quoteText">Loading quote…</p>
+    <p class="quote-author" id="quoteAuthor"></p>
+  </div>
+
+  <!-- Buttons -->
+  <div class="btn-row">
+    <button class="btn btn-back" id="btnBack">← Go Back</button>
+    <button class="btn btn-new" id="btnNewQuote">💡 New Quote</button>
+  </div>
+
+  <!-- Time saved today -->
+  <div class="saved-strip" id="savedStrip">
+    <span class="saved-icon">🌿</span>
+    <span class="saved-label" id="savedLabel">You're on a roll!</span>
+  </div>
+
+  <!-- Focus timer -->
+  <div class="focus-strip">
+    <span>Focus streak</span>
+    <span class="focus-time" id="focusTime">00:00</span>
+    <div class="focus-bar-wrap">
+      <div class="focus-bar" id="focusBar"></div>
+    </div>
+    <span>25 min goal</span>
+  </div>
+
+  <!-- Meme -->
+  <div class="meme-wrap">
+    <div class="meme-label">😂 Today's Mood</div>
+    <div class="meme-card" id="memeCard"></div>
+    <button class="meme-shuffle" id="btnNewMeme">🔀 Different meme</button>
+  </div>
+
+</div>
+
+<script src="blocked.js"></script>
+
+</body>
+</html>

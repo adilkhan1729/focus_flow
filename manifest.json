@@ -3,7 +3,7 @@
   "name": "FocusFlow",
   "version": "3.0",
   "description": "Block distractions with timed locks, tasks/points, schedules, and analytics.",
-  "permissions": ["declarativeNetRequest", "storage", "tabs", "webNavigation", "alarms"],
+  "permissions": ["declarativeNetRequest", "storage", "webNavigation", "alarms"],
   "host_permissions": ["<all_urls>"],
   "background": { "service_worker": "background.js" },
   "action": { "default_popup": "popup.html", "default_title": "FocusFlow" },
